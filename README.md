@@ -1,12 +1,75 @@
-# CPR Trainer Monitoring System
+#IoT-Based  CPR Training Manikin (CS3513)
 
-CPR Training Device and Web Application System
-Monitors, analyzes, and stores real-time CPR data using ESP32, PostgreSQL, and WebSockets.
+An advanced, high-precision IoT-enabled CPR (Cardiopulmonary Resuscitation) training manikin. This project integrates multiple sensors to monitor chest compression depth, rate, force, hand placement, and complete chest recoil in real time. Powered by an ESP32 microcontroller, the training metrics are processed locally, displayed on-body, and streamed wirelessly to a reactive web dashboard for grading and analysis.
 
+Developed in collaboration with and sponsored by Archi-tronic Co., Ltd.
 ---
 
 ## Getting Started
+🚀 How It Works
 
+[Sensor Layer]                                 [Gateway & Backend]           [Frontend]
+- FSR 406 (Hand Release)         ---Analog--->  
+- 4x Load Cells + HX711 (Force)  ---Digital--> [ESP32] --Serial/Wi-Fi--> [Node.js Server] --WebSockets--> [Web Dashboard]
+- MPU6050 (Depth via IMU)        ----I2C----->                                |
+- INA226 (Battery Monitor)       ----I2C----->                             (SQL)
+                                                                              v
+                                                                        [PostgreSQL]
+#1. Sensor Acquisition & Data Fusion
+
+Hand Release & Verification (FSR 406): Placed on the chest plate, the thin-film force sensitive resistor confirms physical touch. It is programmed as a logical interlock to prevent software drift and false compression detections.
+
+Compression Force & Hand Position: Four 50kg Load Cells are configured in a quad layout. Their small analog millivolt ($mV$) outputs are amplified and converted to digital signals using the high-resolution 24-bit HX711 ADC module to calculate total force in kilograms ($kg$) and analyze compression symmetry.
+
+Displacement Depth (MPU6050 GY-521): The integrated 3-axis accelerometer and gyroscope measure rapid downward velocity to accurately calculate chest compression depth in centimeters ($cm$).
+
+Power & Diagnostic Monitoring (INA226): Measures real-time voltage and current draw from the dual 18650 battery stack to accurately estimate and display battery percentage.
+
+2. Microcontroller Processing (ESP32)
+
+The ESP32 NodeMCU (ESP-WROOM-32) serves as the central hub, executing high-frequency calculations:
+
+Calculates instant Beats Per Minute (BPM) and total compression count.
+
+Analyzes Chest Recoil Quality (ensuring complete release of pressure between compression strokes).
+
+Determines hand placement balance based on relative readings across the quad load cell configuration.
+
+Manages immediate local feedback using a 1.3" I2C OLED Display (system metrics, battery voltage, percentage, and FSR state) and a 10-Segment RGB LED Bar (real-time depth threshold tiers).
+
+3. Firmware Logic Flow
+
+The microcontroller state machine transitions between Pressing and Releasing phases:
+
+                  [ Idle State ]
+                        |
+                        v (FSR > Threshold && Force > Limit)
+                 [ Pressing State ]
+                        | 
+                        |---> Continuous Sample: Peak Force / Peak FSR
+                        v (Release Detected)
+                 [ Releasing State ]
+                        |
+                        |---> Evaluate Chest Recoil
+                        |---> Update BPM & Repetition Count
+                        |---> Reset IMU variables (velocity, depth, peakDepth)
+                        v
+                  [ Update Displays & Send Data ]
+
+
+Compression Start (nowPressing Criteria): Initiated only when the FSR 406 registers touch and total force exceeds the predefined target threshold.
+
+During Pressing: The system monitors and logs the peak force and peak FSR displacement.
+
+Upon Release: The system evaluates chest recoil, calculates physical metrics, streams updates, and resets integration variables (velocity, depth, and peak displacement) for the next cycle.
+
+4. Gateway & Live Web Dashboard
+
+Data packets are serialized and transmitted via Bluetooth, serial connection, or Wi-Fi to a Node.js Gateway.
+
+MQTT & WebSockets Protocols: Built on low-overhead MQTT for fast IoT transmissions and persistent WebSockets for low-latency live browser updates (replacing standard HTTP polling to avoid lag).
+
+Data Storage: Final training performance histories are written directly into a PostgreSQL Database for subsequent evaluation.
 ### 1. Create PostgreSQL Database
 
 ```bash
