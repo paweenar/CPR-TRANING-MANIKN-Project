@@ -15,6 +15,13 @@ Developed in collaboration with and sponsored by Archi-tronic Co., Ltd.
 - INA226 (Battery Monitor)       ----I2C----->                             (SQL)
                                                                               v
                                                                         [PostgreSQL]
+## 📸 Hardware Setup Gallery
+
+Here is the internal wiring and physical placement of the sensors inside the manikin:
+
+| Upper Torso Setup (Load Cells Placement) | Internal Components Integration |
+| :---: | :---: |
+| ![Upper Torso Setup](images/S__27238403.jpg) | ![Internal Components](images/S__27238404.jpg) |
 #1. Sensor Acquisition & Data Fusion
 
 Hand Release & Verification (FSR 406): Placed on the chest plate, the thin-film force sensitive resistor confirms physical touch. It is programmed as a logical interlock to prevent software drift and false compression detections.
